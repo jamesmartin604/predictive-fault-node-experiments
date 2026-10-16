@@ -1,0 +1,4 @@
+.venv/
+__pycache__/
+analysis_out/
+mic_data/*.wav
