@@ -1,6 +1,6 @@
 # Predictive Fault Node: Experiments
 
-Sample tests and prototype scripts for my Final Year Project. **The main project lives in a separate repository, [`predictive-fault-node`](https://github.com/<your-username>/predictive-fault-node).** This repo holds the early laptop-side experiments I ran while waiting for the hardware to arrive.
+Sample tests and prototype scripts for my Final Year Project. **The main project lives in a separate, private repository** This repo holds the early laptop-side experiments I ran while waiting for the hardware to arrive.
 
 > **Status:** throwaway prototyping. The scripts here run on placeholder sound recordings, not real fan-fault data. Anything that proves useful will be moved into the main repo.
 
