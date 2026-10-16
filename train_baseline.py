@@ -1,14 +1,15 @@
-"""
+r"""
 train_baseline.py - train simple classifiers on FFT features from labelled WAVs.
 
-Trains "classroom" (classroom_1..5.wav) against "quiet" (quiet_1..2.wav).
+Trains "classroom" (every classroom_*.wav) against "quiet" (every quiet_*.wav).
 
 Setup:
     py -m pip install numpy scipy scikit-learn matplotlib joblib
 
 Usage:
-    py train_baseline.py                      # reads .\mic_data\classroom_1..5.wav, quiet_1..2.wav
+    py train_baseline.py                      # reads .\mic_data\classroom_*.wav, quiet_*.wav
     py train_baseline.py --folder mic_data
+    py train_baseline.py --classes classroom quiet coffee_shop
 
 Labels come from the file names: the trailing recording number or timestamp
 is stripped, so quiet_1.wav and quiet_2.wav are both class "quiet".
@@ -20,9 +21,10 @@ accuracy that says nothing about new recordings.
 
 Outputs (in ./analysis_out):
     confusion.png   confusion matrices for both models
-    model.joblib    final model (logistic regression) trained on all 7 files
+    model.joblib    final model (logistic regression) trained on all recordings
 """
 import argparse
+import glob
 import os
 import re
 
@@ -43,9 +45,9 @@ N_BANDS = 16
 FEATURE_NAMES = (["rms_db", "peak_hz", "centroid_hz"] +
                  ["band_%02d" % i for i in range(N_BANDS)])
 
-# The exact recordings to train on.
-FILES = (["classroom_%d.wav" % i for i in range(1, 9)] +
-         ["quiet_%d.wav" % i for i in range(1, 3)])
+# Classes to train on. Every <class>_<n>.wav in the folder is used, so new
+# recordings are picked up automatically.
+CLASSES = ["classroom", "quiet"]
 
 
 def label_of(path):
@@ -87,13 +89,15 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--folder", default="mic_data")
     p.add_argument("--outdir", default="analysis_out")
+    p.add_argument("--classes", nargs="+", default=CLASSES,
+                   help="class names to train on (default: %(default)s)")
     p.add_argument("--no-show", action="store_true")
     args = p.parse_args()
 
-    files = [os.path.join(args.folder, f) for f in FILES]
-    missing = [f for f in files if not os.path.isfile(f)]
-    if missing:
-        p.error("missing file(s): %s" % ", ".join(missing))
+    files = sorted(f for f in glob.glob(os.path.join(args.folder, "*.wav"))
+                   if label_of(f) in args.classes)
+    if not files:
+        p.error("no %s recordings found in %s" % ("/".join(args.classes), args.folder))
 
     X, y, groups, rates = [], [], [], set()
     for path in files:
@@ -122,8 +126,8 @@ def main():
     if len(classes) < 2:
         p.error("need at least 2 classes")
 
-    # class_weight="balanced": 5 classroom vs 2 quiet recordings would
-    # otherwise bias the models toward "classroom".
+    # class_weight="balanced": unequal numbers of recordings per class would
+    # otherwise bias the models toward the bigger class.
     models = {
         "Logistic regression": make_pipeline(
             StandardScaler(),
